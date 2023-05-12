@@ -295,6 +295,7 @@ import { actionPaste } from "../actions/actionClipboard";
 import {
   actionToggleHandTool,
   zoomToFitElements,
+  zoomToFitViewport,
 } from "../actions/actionCanvas";
 import { jotaiStore } from "../jotai";
 import { activeConfirmDialogAtom } from "./ActiveConfirmDialog";
@@ -1878,7 +1879,19 @@ class App extends React.Component<AppProps, AppState> {
     target:
       | ExcalidrawElement
       | readonly ExcalidrawElement[] = this.scene.getNonDeletedElements(),
-    opts?: { fitToContent?: boolean; animate?: boolean; duration?: number },
+    opts?:
+      | {
+          fitToContent?: boolean;
+          fitToViewport?: never;
+          animate?: boolean;
+          duration?: number;
+        }
+      | {
+          fitToContent?: never;
+          fitToViewport?: boolean;
+          animate?: boolean;
+          duration?: number;
+        },
   ) => {
     this.cancelInProgresAnimation?.();
 
@@ -1889,10 +1902,10 @@ class App extends React.Component<AppProps, AppState> {
     let scrollX = this.state.scrollX;
     let scrollY = this.state.scrollY;
 
-    if (opts?.fitToContent) {
-      // compute an appropriate viewport location (scroll X, Y) and zoom level
-      // that fit the target elements on the scene
-      const { appState } = zoomToFitElements(targets, this.state, false);
+    if (opts?.fitToContent || opts?.fitToViewport) {
+      const { appState } = opts?.fitToContent
+        ? zoomToFitElements(targets, this.state, false)
+        : zoomToFitViewport(targets, this.state, false);
       zoom = appState.zoom;
       scrollX = appState.scrollX;
       scrollY = appState.scrollY;
