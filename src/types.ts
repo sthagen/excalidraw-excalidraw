@@ -365,6 +365,12 @@ export enum UserIdleState {
   IDLE = "idle",
 }
 
+export enum PauseCollaborationState {
+  PAUSE = "pause",
+  RESUME = "resume",
+  SYNC = "sync",
+}
+
 export type ExportOpts = {
   saveFileToDisk?: boolean;
   onExportToBackend?: (
