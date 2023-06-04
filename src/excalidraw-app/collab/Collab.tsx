@@ -342,6 +342,7 @@ class Collab extends PureComponent<Props, CollabState> {
           this.excalidrawAPI.setToast({
             message: t("toast.reconnectRoomServer"),
             duration: Infinity,
+            spinner: true,
             closable: false,
           });
         }
