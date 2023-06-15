@@ -302,6 +302,8 @@ import { activeConfirmDialogAtom } from "./ActiveConfirmDialog";
 import { actionWrapTextInContainer } from "../actions/actionBoundText";
 import BraveMeasureTextError from "./BraveMeasureTextError";
 
+let prevZoom: number | null = null;
+
 const AppContext = React.createContext<AppClassProperties>(null!);
 const AppPropsContext = React.createContext<AppProps>(null!);
 
@@ -1931,14 +1933,24 @@ class App extends React.Component<AppProps, AppState> {
         },
         toValues: { scrollX, scrollY, zoom: zoom.value },
         onStep: ({ scrollX, scrollY, zoom }) => {
+          const zoomChange = zoom - prevZoom!;
+
+          const offsetX =
+            ((this.state.width + this.state.offsetLeft) * zoomChange) / 2;
+          const offsetY =
+            ((this.state.height + this.state.offsetTop) * zoomChange) / 2;
+
           this.setState({
-            scrollX,
-            scrollY,
+            scrollX: scrollX + offsetX,
+            scrollY: scrollY + offsetY,
             zoom: { value: zoom },
           });
+
+          prevZoom = zoom;
         },
         onStart: () => {
           this.setState({ shouldCacheIgnoreZoom: true });
+          prevZoom = origZoom;
         },
         onEnd: () => {
           this.setState({ shouldCacheIgnoreZoom: false });
