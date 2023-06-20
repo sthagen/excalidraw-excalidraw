@@ -25,6 +25,7 @@ import {
   Excalidraw,
   defaultLang,
   LiveCollaborationTrigger,
+  bumpVersion,
 } from "../packages/excalidraw/index";
 import {
   AppState,
@@ -87,6 +88,23 @@ import { appJotaiStore } from "./app-jotai";
 
 import "./index.scss";
 import { ResolutionType } from "../utility-types";
+import { invalidateShapeForElement } from "../renderer/renderElement";
+
+const LUMINANCE_THRESHOLD_DEFAULT = 0.96;
+const TEXT_STROKE_WIDTH_DEFAULT = 2;
+const LS_STROKE_WIDTH = "__textStrokeWidth";
+const LS_LUMINANCE_THRESHOLD = "__luminanceThreshold";
+
+export const getTextStrokeWidth = () =>
+  JSON.parse(
+    localStorage.getItem(LS_STROKE_WIDTH) || `${TEXT_STROKE_WIDTH_DEFAULT}`,
+  );
+
+export const getLuminanceThreshold = () =>
+  JSON.parse(
+    localStorage.getItem(LS_LUMINANCE_THRESHOLD) ||
+      `${LUMINANCE_THRESHOLD_DEFAULT}`,
+  );
 
 polyfill();
 
@@ -604,6 +622,24 @@ const ExcalidrawWrapper = () => {
 
   const isOffline = useAtomValue(isOfflineAtom);
 
+  const [strokeWidth, setStrokeWidth] = useState<number>(getTextStrokeWidth());
+
+  useEffect(() => {
+    localStorage.setItem(LS_STROKE_WIDTH, JSON.stringify(strokeWidth));
+  }, [strokeWidth]);
+
+  // luminance threshold
+  const [luminanceThreshold, setLuminanceThreshold] = useState<number>(
+    getLuminanceThreshold(),
+  );
+
+  useEffect(() => {
+    localStorage.setItem(
+      LS_LUMINANCE_THRESHOLD,
+      JSON.stringify(luminanceThreshold),
+    );
+  }, [luminanceThreshold]);
+
   return (
     <div
       style={{ height: "100%" }}
@@ -673,6 +709,73 @@ const ExcalidrawWrapper = () => {
         )}
         {excalidrawAPI && <Collab excalidrawAPI={excalidrawAPI} />}
       </Excalidraw>
+      <div
+        style={{
+          display: "flex",
+          position: "fixed",
+          left: "50%",
+          transform: "translateX(-50%)",
+          bottom: "1rem",
+          zIndex: 11,
+          gap: "1rem",
+        }}
+      >
+        <div>
+          strokeWidth (px):{" "}
+          <input
+            type="number"
+            min={0}
+            max={10}
+            value={strokeWidth}
+            style={{ width: 40 }}
+            onChange={(event) => {
+              setStrokeWidth(
+                Number(event.target.value || TEXT_STROKE_WIDTH_DEFAULT),
+              );
+
+              excalidrawAPI?.updateScene({
+                elements: excalidrawAPI
+                  .getSceneElementsIncludingDeleted()
+                  .map((element) => {
+                    bumpVersion(element);
+                    invalidateShapeForElement(element);
+                    return element;
+                  })
+                  .slice(),
+              });
+            }}
+          />
+        </div>
+        <div>
+          luminance threshold (0-1. Set to 1 to force white stroke):{" "}
+          <input
+            type="number"
+            value={luminanceThreshold}
+            max={1}
+            min={0}
+            style={{ width: 40 }}
+            step={0.02}
+            onChange={(event) => {
+              setLuminanceThreshold(
+                Number(event.target.value || LUMINANCE_THRESHOLD_DEFAULT),
+              );
+              console.log(
+                Number(event.target.value || LUMINANCE_THRESHOLD_DEFAULT),
+              );
+              excalidrawAPI?.updateScene({
+                elements: excalidrawAPI
+                  .getSceneElementsIncludingDeleted()
+                  .map((element) => {
+                    bumpVersion(element);
+                    invalidateShapeForElement(element);
+                    return element;
+                  })
+                  .slice(),
+              });
+            }}
+          />
+        </div>
+      </div>
       {errorMessage && (
         <ErrorDialog onClose={() => setErrorMessage("")}>
           {errorMessage}

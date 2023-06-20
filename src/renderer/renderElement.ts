@@ -50,6 +50,7 @@ import {
 } from "../element/textElement";
 import { LinearElementEditor } from "../element/linearElementEditor";
 import { getContrastingBWColor } from "../colors";
+import { getLuminanceThreshold, getTextStrokeWidth } from "../excalidraw-app";
 
 // using a stronger invert (100% vs our regular 93%) and saturate
 // as a temp hack to make images in dark theme look closer to original
@@ -341,17 +342,20 @@ const drawElementOnCanvas = (
         const verticalOffset = element.height - element.baseline;
 
         // Set the color of the outline
-        context.strokeStyle = getContrastingBWColor(element.strokeColor, 0.96);
-
-        // Set the width of the outline
-        const minTextStrokeWidth = 2;
-        context.lineWidth = Math.max(
-          minTextStrokeWidth,
-          minTextStrokeWidth / renderConfig.zoom.value,
+        context.strokeStyle = getContrastingBWColor(
+          element.strokeColor,
+          getLuminanceThreshold(),
         );
 
+        // Set the width of the outline
+        const minTextStrokeWidth = getTextStrokeWidth();
+
         for (let index = 0; index < lines.length; index++) {
-          if (element.textAlign === "center") {
+          if (minTextStrokeWidth > 0) {
+            context.lineWidth = Math.max(
+              minTextStrokeWidth,
+              minTextStrokeWidth / renderConfig.zoom.value,
+            );
             context.strokeText(
               lines[index],
               horizontalOffset,

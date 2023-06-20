@@ -1,5 +1,6 @@
 import React from "react";
 import { getContrastingBWColor } from "../../colors";
+import { getTextStrokeWidth } from "../../excalidraw-app";
 
 interface HotkeyLabelProps {
   color: string;
@@ -15,7 +16,7 @@ const HotkeyLabel = ({
     <div
       className="color-picker__button__hotkey-label"
       style={{
-        color: getContrastingBWColor(color, 0.7),
+        color: getContrastingBWColor(color, getTextStrokeWidth()),
       }}
     >
       {isShade && "⇧"}
