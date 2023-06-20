@@ -54,7 +54,7 @@ export const CustomColorList = ({
             key={i}
           >
             <div className="color-picker__button-outline" />
-            <HotkeyLabel color={c} keyLabel={i + 1} isCustomColor />
+            <HotkeyLabel color={c} keyLabel={i + 1} />
           </button>
         );
       })}

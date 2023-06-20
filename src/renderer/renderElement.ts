@@ -49,6 +49,7 @@ import {
   getBoundTextMaxWidth,
 } from "../element/textElement";
 import { LinearElementEditor } from "../element/linearElementEditor";
+import { getContrastingBWColor } from "../colors";
 
 // using a stronger invert (100% vs our regular 93%) and saturate
 // as a temp hack to make images in dark theme look closer to original
@@ -338,7 +339,25 @@ const drawElementOnCanvas = (
           element.lineHeight,
         );
         const verticalOffset = element.height - element.baseline;
+
+        // Set the color of the outline
+        context.strokeStyle = getContrastingBWColor(element.strokeColor, 0.96);
+
+        // Set the width of the outline
+        const minTextStrokeWidth = 2;
+        context.lineWidth = Math.max(
+          minTextStrokeWidth,
+          minTextStrokeWidth / renderConfig.zoom.value,
+        );
+
         for (let index = 0; index < lines.length; index++) {
+          if (element.textAlign === "center") {
+            context.strokeText(
+              lines[index],
+              horizontalOffset,
+              (index + 1) * lineHeightPx - verticalOffset,
+            );
+          }
           context.fillText(
             lines[index],
             horizontalOffset,
@@ -390,18 +409,25 @@ export const invalidateShapeForElement = (element: ExcalidrawElement) =>
   shapeCache.delete(element);
 
 function adjustRoughness(size: number, roughness: number): number {
-  if (size >= 50) {
+  const cutoff = 60;
+  if (size >= cutoff) {
     return roughness;
   }
-  const factor = 2 + (50 - size) / 10;
+  const factor = 2 + (cutoff - size) / 10;
 
   return roughness / factor;
 }
+
+const getHachureGap = function transform(x: number, base = 4) {
+  return x * 2 + base;
+};
 
 export const generateRoughOptions = (
   element: ExcalidrawElement,
   continuousPath = false,
 ): Options => {
+  const v2 = element.strokeColor === "black";
+  const v3 = element.strokeColor === "#000";
   const options: Options = {
     seed: element.seed,
     strokeLineDash:
@@ -422,8 +448,14 @@ export const generateRoughOptions = (
     // when increasing strokeWidth, we must explicitly set fillWeight and
     // hachureGap because if not specified, roughjs uses strokeWidth to
     // calculate them (and we don't want the fills to be modified)
-    fillWeight: element.strokeWidth / 2,
-    hachureGap: element.strokeWidth * 4,
+    fillWeight: v2
+      ? Math.max(1, element.strokeWidth / 1.5)
+      : element.strokeWidth / 2,
+    hachureGap:
+      v2 || v3
+        ? getHachureGap(element.strokeWidth, v3 ? 4 : 3)
+        : element.strokeWidth * 4,
+    disableMultiStrokeFill: !!v2,
     roughness: adjustRoughness(
       Math.min(element.width, element.height),
       element.roughness,
@@ -1396,6 +1428,22 @@ export const renderElementToSvg = (
             ? "end"
             : "start";
         for (let i = 0; i < lines.length; i++) {
+          // create a text stroke
+          const stroke = svgRoot.ownerDocument!.createElementNS(SVG_NS, "text");
+          stroke.textContent = lines[i];
+          stroke.setAttribute("x", `${horizontalOffset}`);
+          stroke.setAttribute("y", `${i * lineHeightPx}`);
+          stroke.setAttribute("font-family", getFontFamilyString(element));
+          stroke.setAttribute("font-size", `${element.fontSize}px`);
+          stroke.setAttribute("fill", "#000");
+          stroke.setAttribute("stroke", "#000");
+          stroke.setAttribute("text-anchor", textAnchor);
+          stroke.setAttribute("style", "white-space: pre;");
+          stroke.setAttribute("direction", direction);
+          stroke.setAttribute("dominant-baseline", "text-before-edge");
+          node.appendChild(stroke);
+
+          // create a text fill
           const text = svgRoot.ownerDocument!.createElementNS(SVG_NS, "text");
           text.textContent = lines[i];
           text.setAttribute("x", `${horizontalOffset}`);

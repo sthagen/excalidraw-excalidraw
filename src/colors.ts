@@ -167,4 +167,55 @@ export const getAllColorsSpecificShade = (index: 0 | 1 | 2 | 3 | 4) =>
 export const rgbToHex = (r: number, g: number, b: number) =>
   `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 
+const parseRGBFunction = (
+  /**
+   * `rgb()` or `rgba()` color string
+   */
+  rgbFunctionValue: string,
+) => {
+  const match = rgbFunctionValue.match(/(rgba?|hsla?)\(([^)]+)\)/i);
+  if (!match) {
+    return { r: 0, g: 0, b: 0 };
+  }
+  const values = match[2].split(",");
+  const r = parseInt(values[0].trim());
+  const g = parseInt(values[1].trim());
+  const b = parseInt(values[2].trim());
+
+  return { r, g, b };
+};
+
+export const colorToRGB = (
+  /**
+   * HTML color, HEX(A), rgba()...
+   */
+  color: string,
+) => {
+  const style = new Option().style;
+  style.color = color;
+
+  if (style.color) {
+    return parseRGBFunction(style.color);
+  }
+  return { r: 0, g: 0, b: 0 };
+};
+
+// inspiration from https://stackoverflow.com/a/11868398
+export const getContrastingBWColor = (
+  color: string,
+  /**
+   * <0-1>, the closer to one the more light the input color needs to be
+   * to get `black` return value
+   */
+  threshold = 0.627,
+) => {
+  if (color === "transparent") {
+    return "black";
+  }
+
+  const { r, g, b } = colorToRGB(color);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq / 255 >= threshold ? "black" : "white";
+};
+
 // -----------------------------------------------------------------------------

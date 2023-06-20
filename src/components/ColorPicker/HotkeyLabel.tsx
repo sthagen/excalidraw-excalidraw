@@ -1,23 +1,21 @@
 import React from "react";
-import { getContrastYIQ } from "./colorPickerUtils";
+import { getContrastingBWColor } from "../../colors";
 
 interface HotkeyLabelProps {
   color: string;
   keyLabel: string | number;
-  isCustomColor?: boolean;
   isShade?: boolean;
 }
 const HotkeyLabel = ({
   color,
   keyLabel,
-  isCustomColor = false,
   isShade = false,
 }: HotkeyLabelProps) => {
   return (
     <div
       className="color-picker__button__hotkey-label"
       style={{
-        color: getContrastYIQ(color, isCustomColor),
+        color: getContrastingBWColor(color, 0.7),
       }}
     >
       {isShade && "⇧"}
